@@ -1,0 +1,3 @@
+title: Mouse controlling deamon
+components:
+- path: SBG/MouseControl

@@ -1,0 +1,9 @@
+[Ee]xported[Oo]bj/
+.vs/
+*.userprefs
+*.pidb
+*.suo
+*.user
+*.exe
+*.pdb
+*/obj
