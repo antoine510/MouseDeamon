@@ -17,3 +17,7 @@ paramSpecs:
     allowed:
     - MainScreen
     - AuxScreen
+    - TabletScreen
+- name: GamestreamApp
+  description: The App to launch on that screen
+  string:

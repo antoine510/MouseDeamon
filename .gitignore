@@ -2,9 +2,9 @@
 .vs/
 *.userprefs
 *.pidb
+*.pdb
 *.suo
 *.user
 *.exe
-*.pdb
 */obj
 *.log
