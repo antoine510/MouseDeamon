@@ -90,6 +90,9 @@ namespace MouseDeamon {
 			Topic.CometReceiver mousePositionTopic = new Topic.CometReceiver("mousePosition", Topic.CometReceiver.StorageType.STREAM);
 			Topic.CometReceiver mouseEventTopic = new Topic.CometReceiver("mouseEvent", Topic.CometReceiver.StorageType.QUEUE);
 
+			Satellite self = Satellite.GetSelf();
+			string address = EngineClient.Get(self.EngineClientID).Address;
+
 			Session se = null;
 			while (!Session.TryFind(out se)) { System.Threading.Thread.Sleep(1000); }
 			Engine.JoinSession(se);
@@ -104,7 +107,7 @@ namespace MouseDeamon {
 			while (mouseComp.Action != ComponentAction.STOP) {
 				Comet c = mousePositionTopic.GetComet();    // Range: -1 to 1
 				if (c != null) {
-					if (mi.dx != WinRange(c["X"].AsFloat()) || mi.dy != WinRange(c["Y"].AsFloat())) {
+					if ((mi.dx != WinRange(c["X"].AsFloat()) || mi.dy != WinRange(c["Y"].AsFloat())) && c["Client"].AsString() == address) {
 						mi.dx = WinRange(c["X"].AsFloat());   // Range: 0 to 65536
 						mi.dy = WinRange(c["Y"].AsFloat());
 						mi.dwFlags |= CMouseInput.FLAG_MOUSEMOVED;
@@ -116,11 +119,13 @@ namespace MouseDeamon {
 
 				c = mouseEventTopic.GetComet();
 				if (c != null) {
-					mi.dwFlags |= c["LeftDown"].AsBool() ? CMouseInput.FLAG_LEFTDOWN : 0;
-					mi.dwFlags |= c["LeftUp"].AsBool() ? CMouseInput.FLAG_LEFTUP : 0;
-					mi.dwFlags |= c["RightDown"].AsBool() ? CMouseInput.FLAG_RIGHTDOWN : 0;
-					mi.dwFlags |= c["RightUp"].AsBool() ? CMouseInput.FLAG_RIGHTUP : 0;
-					inputChanged = true;
+					if(c["Client"].AsString() == address) {
+						mi.dwFlags |= c["LeftDown"].AsBool() ? CMouseInput.FLAG_LEFTDOWN : 0;
+						mi.dwFlags |= c["LeftUp"].AsBool() ? CMouseInput.FLAG_LEFTUP : 0;
+						mi.dwFlags |= c["RightDown"].AsBool() ? CMouseInput.FLAG_RIGHTDOWN : 0;
+						mi.dwFlags |= c["RightUp"].AsBool() ? CMouseInput.FLAG_RIGHTUP : 0;
+						inputChanged = true;
+					}
 
 					c.Dispose();
 				}
