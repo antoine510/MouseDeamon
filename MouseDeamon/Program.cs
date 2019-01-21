@@ -10,6 +10,9 @@ namespace MouseDeamon {
 
 	[StructLayout(LayoutKind.Explicit, Size = 40)]
 	public struct CInput {
+		public const uint INPUT_MOUSE = 0;
+		public const uint INPUT_KEYBOARD = 1;
+
 		[FieldOffset(0)] public uint type;
 		[FieldOffset(8)] public CMouseInput mi;
 		[FieldOffset(8)] public CKbdInput ki;
@@ -17,6 +20,13 @@ namespace MouseDeamon {
 
 	[StructLayout(LayoutKind.Sequential, Pack = 8)]
 	public struct CMouseInput {
+		public const uint FLAG_ABSOLUTE = 0x8000;
+		public const uint FLAG_MOUSEMOVED = 0x1;
+		public const uint FLAG_LEFTDOWN = 0x2;
+		public const uint FLAG_LEFTUP = 0x4;
+		public const uint FLAG_RIGHTDOWN = 0x8;
+		public const uint FLAG_RIGHTUP = 0x10;
+
 		public int dx;
 		public int dy;
 		public uint mouseData;
@@ -33,8 +43,19 @@ namespace MouseDeamon {
 		public uint time;
 		public ulong dwExtraInfo;
 	}
+	/*new CKbdInput {
+		wVk = 0x42,
+		wScan = 0,
+		dwFlags = 0,
+		dwExtraInfo = 0
+	};*/
 
-	class Program {
+	static class InputExtensions {
+		public static CInput AsCInput(this CMouseInput cmi) => new CInput { type = CInput.INPUT_MOUSE, mi = cmi };
+		public static CInput AsCInput(this CKbdInput cki) => new CInput { type = CInput.INPUT_KEYBOARD, ki = cki };
+	}
+
+	static class Program {
 
 		[DllImport("User32.dll")]
 		static extern int SetForegroundWindow(Ptr hWnd);
@@ -61,7 +82,7 @@ namespace MouseDeamon {
 
 			try {
 				Satellite.GetSelf();
-			} catch(StarburstException) {
+			} catch (StarburstException) {
 				Satellite.Deploy();
 			}
 			Component mouseComp = new Component("SBG/MouseControl");
@@ -75,33 +96,18 @@ namespace MouseDeamon {
 			while (mouseComp.Action != ComponentAction.START) { System.Threading.Thread.Sleep(100); }
 			mouseComp.ReportState(ComponentState.STARTED);
 
-			CInput input = new CInput {
-				type = 0,
-				mi = new CMouseInput {
-					dx = 0,
-					dy = 0,
-					mouseData = 1,
-					dwFlags = 0x8001,
-					time = 0,
-					dwExtraInfo = 0
-				}/*,
-				ki = new CKbdInput {
-					wVk = 0x42,
-					wScan = 0,
-					dwFlags = 0,
-					dwExtraInfo = 0
-				}*/
-			};
+			CMouseInput mi = new CMouseInput { dwFlags = CMouseInput.FLAG_ABSOLUTE };
+
 			var inputPtr = Marshal.AllocHGlobal(Marshal.SizeOf<CInput>());
 			bool inputChanged = false;
 
 			while (mouseComp.Action != ComponentAction.STOP) {
-				Comet c = mousePositionTopic.GetComet();	// Range: -1 to 1
-				if(c != null) {
-					if(input.mi.dx != WinRange(c["X"].AsFloat()) || input.mi.dy != WinRange(c["Y"].AsFloat())) {
-						input.mi.dx = WinRange(c["X"].AsFloat());   // Range: 0 to 65536
-						input.mi.dy = WinRange(c["Y"].AsFloat());
-						input.mi.dwFlags |= 0x1u;   // setting mouse moved bit
+				Comet c = mousePositionTopic.GetComet();    // Range: -1 to 1
+				if (c != null) {
+					if (mi.dx != WinRange(c["X"].AsFloat()) || mi.dy != WinRange(c["Y"].AsFloat())) {
+						mi.dx = WinRange(c["X"].AsFloat());   // Range: 0 to 65536
+						mi.dy = WinRange(c["Y"].AsFloat());
+						mi.dwFlags |= CMouseInput.FLAG_MOUSEMOVED;
 						inputChanged = true;
 					}
 
@@ -110,23 +116,23 @@ namespace MouseDeamon {
 
 				c = mouseEventTopic.GetComet();
 				if (c != null) {
-					if (c["LeftDown"].AsBool()) input.mi.dwFlags |= 0x2u;
-					if (c["LeftUp"].AsBool()) input.mi.dwFlags |= 0x4u;
-					if (c["RightDown"].AsBool()) input.mi.dwFlags |= 0x8u;
-					if (c["RightUp"].AsBool()) input.mi.dwFlags |= 0x10u;
+					mi.dwFlags |= c["LeftDown"].AsBool() ? CMouseInput.FLAG_LEFTDOWN : 0;
+					mi.dwFlags |= c["LeftUp"].AsBool() ? CMouseInput.FLAG_LEFTUP : 0;
+					mi.dwFlags |= c["RightDown"].AsBool() ? CMouseInput.FLAG_RIGHTDOWN : 0;
+					mi.dwFlags |= c["RightUp"].AsBool() ? CMouseInput.FLAG_RIGHTUP : 0;
 					inputChanged = true;
 
 					c.Dispose();
 				}
 
-				if(inputChanged) {
-					Marshal.StructureToPtr(input, inputPtr, true);
-					if (SendInput(1, inputPtr, Marshal.SizeOf<CInput>()) < 1) throw new Exception("Couldn't send input : code " + GetLastError());
-					input.mi.dwFlags = 0x8000;  // unsetting mouse moved bit
+				if (inputChanged) {
+					Marshal.StructureToPtr(mi.AsCInput(), inputPtr, true);
+					if (SendInput(1, inputPtr, Marshal.SizeOf<CInput>()) < 1) throw new Exception("Couldn't send input : error " + GetLastError());
+					mi.dwFlags = CMouseInput.FLAG_ABSOLUTE;  // reseting flags
 					inputChanged = false;
 				}
 
-				System.Threading.Thread.Sleep(50);
+				System.Threading.Thread.Sleep(20);
 			}
 			mouseComp.ReportState(ComponentState.STOPPED);
 		}
