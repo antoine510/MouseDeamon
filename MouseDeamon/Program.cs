@@ -85,7 +85,7 @@ namespace MouseDeamon {
 			} catch (StarburstException) {
 				Satellite.Deploy();
 			}
-			Component mouseComp = new Component("SBG/MouseControl");
+			Component mouseComp = new Component("SBG/MouseClient");
 
 			Topic.CometReceiver mousePositionTopic = new Topic.CometReceiver("mousePosition", Topic.CometReceiver.StorageType.STREAM);
 			Topic.CometReceiver mouseEventTopic = new Topic.CometReceiver("mouseEvent", Topic.CometReceiver.StorageType.QUEUE);

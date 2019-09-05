@@ -1,3 +1,3 @@
-title: Mouse controlling deamon
+title: Mouse control client deamon
 components:
-- path: SBG/MouseControl
+- path: SBG/MouseClient

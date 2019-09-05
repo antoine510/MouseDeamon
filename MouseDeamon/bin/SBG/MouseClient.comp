@@ -1,0 +1,12 @@
+title: Mouse Client
+version: "1.0.0"
+description: This component is used to enable mouse control from a Controller
+iconImage: SBG/Icons/mouse.png
+backgroundImage: SBG/Icons/mouseBanner.png
+topics:
+- name: mousePosition
+  comet: Vector2
+  in: true
+- name: mouseEvent
+  comet: MouseEvent
+  in: true
