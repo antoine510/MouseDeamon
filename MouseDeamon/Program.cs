@@ -80,6 +80,11 @@ namespace MouseDeamon {
 			Nebula.InitModule();
 			Engine.InitModule("SBG/MouseDeamon");
 
+			while(!Engine.IsLocalRunning()) {
+				Console.WriteLine("Waiting for local engine...");
+				System.Threading.Thread.Sleep(1000);
+			}
+
 			try {
 				Satellite.GetSelf();
 			} catch (StarburstException) {
